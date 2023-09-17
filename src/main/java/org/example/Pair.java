@@ -1,19 +1,27 @@
 package org.example;
 
 public final class Pair<firstVariable, secondVariable> {
-    private final firstVariable FIRST;
-    private final secondVariable SECOND;
+    private firstVariable first;
+    private secondVariable second;
 
-    public Pair(firstVariable left, secondVariable right) {
-        FIRST = left;
-        SECOND = right;
+    public Pair(firstVariable first, secondVariable second) {
+        this.first = first;
+        this.second = second;
     }
 
-    public firstVariable First() {
-        return FIRST;
+    public firstVariable first() {
+        return first;
     }
 
-    public secondVariable Second() {
-        return SECOND;
+    public secondVariable second() {
+        return second;
+    }
+
+    public void setFirst(firstVariable first) {
+        this.first = first;
+    }
+
+    public void setSecond(secondVariable second) {
+        this.second = second;
     }
 }
