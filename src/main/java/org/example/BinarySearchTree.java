@@ -26,22 +26,18 @@ public final class BinarySearchTree<tkey, tvalue>
     final Comparator<tkey> comparator;
     Node root;
 
-    private final class TreeIterator implements Iterator<Triplet<Integer, tkey, tvalue>> {
-        private Node currentNode;
+    private final class PrefixIterator implements Iterator<Triplet<Integer, tkey, tvalue>> {
+        private Node currentState;
         private final Stack<Node> way;
 
-        public TreeIterator(Node root) {
-            currentNode = root;
+        public PrefixIterator(Node root) {
+            currentState = root;
             way = new Stack<>();
-            while (currentNode != null && currentNode.leftSubtree != null) {
-                way.push(currentNode);
-                currentNode = currentNode.leftSubtree;
-            }
         }
 
         @Override
         public boolean hasNext() {
-            return currentNode != null;
+            return currentState != null;
         }
 
         @Override
@@ -50,31 +46,139 @@ public final class BinarySearchTree<tkey, tvalue>
                 throw new NoSuchElementException();
             }
 
-            Triplet<Integer, tkey, tvalue> tuple = new Triplet<>(way.size(), currentNode.keyAndValue.first(), currentNode.keyAndValue.second());
+            Triplet<Integer, tkey, tvalue> tuple = new Triplet<>(way.size(), currentState.keyAndValue.first(), currentState.keyAndValue.second());
 
-            if (currentNode.rightSubtree != null) {
-                way.push(currentNode);
-                currentNode = currentNode.rightSubtree;
+            if (currentState.leftSubtree != null) {
+                way.push(currentState);
+                currentState = currentState.leftSubtree;
+                return tuple;
+            } else if (currentState.rightSubtree != null) {
+                way.push(currentState);
+                currentState = currentState.rightSubtree;
+                return tuple;
+            } else {
+                while (true) {
+                    if (way.empty()) {
+                        currentState = null;
+                        return tuple;
+                    } else if (way.peek().rightSubtree == currentState) {
+                        currentState = way.pop();
+                    } else {
+                        if (way.peek().rightSubtree != null) {
+                            currentState = way.peek().rightSubtree;
+                            return tuple;
+                        } else {
+                            currentState = way.pop();
+                        }
+                    }
+                }
+            }
+        }
+    }
 
-                while (currentNode.leftSubtree != null) {
-                    way.push(currentNode);
-                    currentNode = currentNode.leftSubtree;
+    private final class InfixIterator implements Iterator<Triplet<Integer, tkey, tvalue>> {
+        private Node currentState;
+        private final Stack<Node> way;
+
+        public InfixIterator(Node root) {
+            currentState = root;
+            way = new Stack<>();
+
+            while (currentState != null && currentState.leftSubtree != null) {
+                way.push(currentState);
+                currentState = currentState.leftSubtree;
+            }
+        }
+
+        @Override
+        public boolean hasNext() {
+            return currentState != null;
+        }
+
+        @Override
+        public Triplet<Integer, tkey, tvalue> next() {
+            if (!hasNext()) {
+                throw new NoSuchElementException();
+            }
+
+            Triplet<Integer, tkey, tvalue> tuple = new Triplet<>(way.size(), currentState.keyAndValue.first(), currentState.keyAndValue.second());
+
+            if (currentState.rightSubtree != null) {
+                way.push(currentState);
+                currentState = currentState.rightSubtree;
+
+                while (currentState.leftSubtree != null) {
+                    way.push(currentState);
+                    currentState = currentState.leftSubtree;
                 }
             } else {
                 if (!way.empty()) {
-                    if (way.peek().leftSubtree != currentNode) {
-                        while (!way.empty() && way.peek().rightSubtree == currentNode) {
-                            currentNode = way.pop();
+                    if (way.peek().leftSubtree != currentState) {
+                        while (!way.empty() && way.peek().rightSubtree == currentState) {
+                            currentState = way.pop();
                         }
                         if (way.empty()) {
-                            currentNode = null;
+                            currentState = null;
                             return tuple;
                         }
 
                     }
-                    currentNode = way.pop();
+                    currentState = way.pop();
                 } else {
-                    currentNode = null;
+                    currentState = null;
+                }
+            }
+            return tuple;
+        }
+    }
+
+    private final class PostfixIterator implements Iterator<Triplet<Integer, tkey, tvalue>> {
+        private Node currentState;
+        private final Stack<Node> way;
+
+        public PostfixIterator(Node root) {
+            currentState = root;
+            way = new Stack<>();
+
+            while (currentState != null && currentState.leftSubtree != null) {
+                way.push(currentState);
+                currentState = currentState.leftSubtree;
+            }
+            while (currentState != null && currentState.rightSubtree != null) {
+                way.push(currentState);
+                currentState = currentState.rightSubtree;
+            }
+        }
+
+        @Override
+        public boolean hasNext() {
+            return currentState != null;
+        }
+
+        @Override
+        public Triplet<Integer, tkey, tvalue> next() {
+            if (!hasNext()) {
+                throw new NoSuchElementException();
+            }
+
+            Triplet<Integer, tkey, tvalue> tuple = new Triplet<>(way.size(), currentState.keyAndValue.first(), currentState.keyAndValue.second());
+
+            if (way.empty()) {
+                currentState = null;
+            } else {
+                if (way.peek().rightSubtree == currentState) {
+                    currentState = way.pop();
+                } else {
+                    if (way.peek().rightSubtree != null) {
+                        currentState = way.peek().rightSubtree;
+
+                        while (currentState.leftSubtree != null || currentState.rightSubtree != null) {
+                            way.push(currentState);
+                            currentState = currentState.leftSubtree != null ? currentState.leftSubtree : currentState.rightSubtree;
+                        }
+                    } else {
+                        currentState = way.pop();
+                    }
                 }
             }
             return tuple;
@@ -83,7 +187,7 @@ public final class BinarySearchTree<tkey, tvalue>
 
     @Override
     public Iterator<Triplet<Integer, tkey, tvalue>> iterator() {
-        return new TreeIterator(root);
+        return new InfixIterator(root);
     }
 
     public BinarySearchTree(Comparator<tkey> comparator) {
